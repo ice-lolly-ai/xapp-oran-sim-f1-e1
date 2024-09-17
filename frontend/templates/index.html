@@ -1,0 +1,85 @@
+<!-- frontend/templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>5G O-RAN xApp</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>5G O-RAN Interface Monitoring</h1>
+    
+    <!-- Table to display interfaces and data -->
+    <table>
+        <thead>
+            <tr>
+                <th>Interface</th>
+                <th>Throughput (Mbps)</th>
+                <th>Latency (ms)</th>
+                <th>3GPP Spec Reference</th>
+            </tr>
+        </thead>
+        <tbody id="interface-data">
+            <!-- Dynamic content -->
+        </tbody>
+    </table>
+
+    <!-- Chart Container -->
+    <div>
+        <canvas id="chart"></canvas>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('chart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Throughput Over Time',
+                    data: [],
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { display: true },
+                    y: { display: true }
+                }
+            }
+        });
+
+        function updateTableAndChart(data) {
+            const tbody = document.getElementById('interface-data');
+            tbody.innerHTML = '';  // Clear table
+
+            Object.keys(data).forEach(interface => {
+                const row = `<tr>
+                    <td>${interface}</td>
+                    <td>${data[interface].throughput.toFixed(2)}</td>
+                    <td>${data[interface].latency.toFixed(2)}</td>
+                    <td>${data[interface].spec_ref}</td>
+                </tr>`;
+                tbody.innerHTML += row;
+
+                // Update chart
+                chart.data.labels.push(interface);
+                chart.data.datasets[0].data.push(data[interface].throughput);
+                chart.update();
+            });
+        }
+
+        function fetchData() {
+            fetch('http://localhost:5000/data')
+                .then(response => response.json())
+                .then(data => updateTableAndChart(data))
+                .catch(error => console.error('Error:', error));
+        }
+
+        setInterval(fetchData, 2000);  // Fetch data every 2 seconds
+    </script>
+</body>
+</html>
